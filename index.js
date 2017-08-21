@@ -107,7 +107,20 @@ console.log("****req body result action is:" + req.body.result.action);
           // Iterate over each messaging event
           entry.messaging.forEach(function(event) {
               if(event.postback){
-                  processPostback(event);
+                request({
+                    url: "https://graph.facebook.com/v2.6/me/messages",
+                    qs: {access_token: token},
+                    method: 'POST',
+                    json: {
+                        recipient: {id: recipientId},
+                        message: {text: message},
+                    }
+                }, function(error, response, body) {
+                  console.log("sending postback reply");
+                    if (error) {
+                        console.log("Error sending message: " + response.error);
+                    }
+                });
               }else if(event.message && event.message.text){
                   sendMessage(event);
               }
