@@ -3,29 +3,17 @@
 let express = require('express');
 var request = require('request');
 var bodyParser = require('body-parser');
-// var apiaiApp = require('apiai')('79e3bdbc0c0f4a9887d788c7bf998216');
 var token = 'EAAZAcDt7TSFwBAJL4gWZBAX8eyK5qEzQ37QWN6Dn75XY4rHgbU65uJ569B8hqdQAGI6eIquMmcj8XpuUVf4Cgb19xKD7IToMh2k3hgdwNfdz3ovi3ZCTZA82njU4bm9Y2Q7dlDK8MvaIaB7ZAuZChVZAvORUdEMs14luc2pW8VlPwZDZD';
 var app = express();
 // var MongoClient = require('mongodb').MongoClient;
-// var url = 'mongodb://elo:pizza_pass@ds155587.mlab.com:55587/elo-bot';
-// var mongoose = require('mongoose');
-// var db = mongoose.createConnection(url);
-// // mongoose.connect(url);
-//
-// var userSchema = mongoose.Schema({
-//   session:  String,
-//   cards: [{front: String, back: String}]
-// });
-// var User = mongoose.model('User', userSchema);
 var User = require('./mongoose.js');
-
 
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(bodyParser.json());
 app.listen((process.env.PORT || 5000), function(){
-  console.log('Express server is listening on port ' + app.get('port'));
+  // console.log('Express server is listening on port 5000' + app.get('port'));
+  console.log('Express server is listening on port 5000');
 });
-
 
 app.get("/", function (req, res) {
     res.send("Deployed!");
@@ -49,8 +37,6 @@ app.post('/webhook', function(req, res){
   var id = req.body.entry[0].messaging[0].sender.id;
   var text = req.body.entry[0].messaging[0].message.text;
   // console.log(JSON.stringify(req.body));
-  console.log("BEFORE DB");
-    console.log("openn");
     User.findOne({'session': id}, function(err, doc) {
       if(doc === null){
         app.initUserCards(id, function(doc){
@@ -60,9 +46,6 @@ app.post('/webhook', function(req, res){
       else console.log("found user session");
       if(err){ throw err; }
     });
-
-  console.log("AFTER DB");
-
   // MongoClient.connect(url, function(err, db) {
   //   if(err) {
   //     console.log(err);
@@ -81,16 +64,13 @@ app.post('/webhook', function(req, res){
     })
   })
   // res.send(req.body);
-
   res.sendStatus(200).end();
-
-
 });
+
 app.initUserCards = function(id, callback) {
 
-  console.log("Setting up new user with session id");
   var curUser = new User({session: id, cards:[]})
-  console.log("session id is: " + curUser.session);
+  console.log("Setting up new user with session id " + curUser.session);
 
   curUser.save(function (err, curUser) {
     if (err) return console.error(err);
@@ -108,8 +88,7 @@ app.findCards = function(sessionID, callback) {
 }
 
 app.addCard = function(data, sessionID, callback) {
-  console.log("in add card");
-console.log("data is: " + JSON.stringify(data));
+  // console.log("in add card");
   User.findOneAndUpdate(
     {session: sessionID},
     {$push: {cards: data}},
@@ -121,8 +100,8 @@ console.log("data is: " + JSON.stringify(data));
   );
 };
 
+// Connect to API.AI to get fulfillment (small talk / Card intent / Practice intent)
 app.speechHandler = function(text, id, cb) {
-  console.log("in speech handler");
   var reqObj = {
     url: 'https://api.api.ai/v1/query?v=20150910',
     headers: {
@@ -144,28 +123,16 @@ app.speechHandler = function(text, id, cb) {
       console.log(JSON.stringify(body))
       if(body.result.parameters.front !== "" && body.result.parameters.back !== "")
       {
-        console.log("adding card to mongo");
-
-          console.log("connected to mongo");
           app.addCard({front:body.result.parameters.front, back:body.result.parameters.back}, id, function(doc){
-            console.log("USER: " + JSON.stringify(doc));
+            // console.log("USER: " + JSON.stringify(doc));
           })
-        //
-        // MongoClient.connect(url, function(err, db) {
-        //   if(err) {
-        //     console.log(err)
-        //   }
-        //   app.addCard({front:body.result.parameters.front, back:body.result.parameters.back}, id, db, function(doc){
-        //     db.close();
-        //   });
-        // });
-        console.log("added card to mongo");
       }
       cb(body.result.fulfillment.speech);
     }
   });
 };
 
+// send the message api.ai generated
 app.messageHandler = function(text, id, cb) {
   console.log("in message handler");
   var data = {
