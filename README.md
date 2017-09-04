@@ -24,7 +24,7 @@ Each users's Messenger sessionID is stored in MongoDB so that they can access th
 - [ ] add quick reply option to the bot: https://developers.facebook.com/docs/messenger-platform/send-api-reference/quick-replies
 - [x] host mongoDB on mLab
 - [x] configure mongoose and get rid of the deprecation warning for open()
-- [ ] customize API.AI small talk
+- [x] customize API.AI small talk
 - [x] create a Card Intent for the API.AI agent
 - [x] create a Practice Intent for the API.AI agent
 - [ ] create process.env file for Node
